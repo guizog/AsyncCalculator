@@ -18,3 +18,8 @@
 /AsyncCalculator/Frontend/PROJECT_MIGRATION_LOG.txt
 /AsyncCalculator/Frontend/README.md
 /AsyncCalculator/AsyncCalculator.sln
+/AsyncCalculator/Backend/bin/Debug/net9.0
+/AsyncCalculator/Backend/Model
+/AsyncCalculator/Backend/obj
+/AsyncCalculator/Backend/Properties
+/AsyncCalculator/Backend/Backend.csproj.user

@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  worker:
+    build: .
+    container_name: rabbitmq_worker
+    environment:
+      RABBITMQ_HOST: rabbitmq       # the hostname of the RabbitMQ container
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      RABBITMQ_PORT: 5672
+      DOTNET_UNBUFFERED: 1
+    depends_on:
+      - rabbitmq
+    networks:
+      - rabbit_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"      # AMQP
+      - "15672:15672"    # Management UI
+    networks:
+      - rabbit_network
+
+networks:
+  rabbit_network:
+    external: true
+    driver: bridge

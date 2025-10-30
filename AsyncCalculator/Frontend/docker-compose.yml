@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  node-webserver:
+    build: .
+    container_name: node-webserver
+    networks:
+      - rabbit_network
+    ports:
+       - "1337:1337"
+    environment:
+        RABBITMQ_HOST: rabbitmq    
+
+networks:
+  rabbit_network:
+    external: true
+    driver: bridge

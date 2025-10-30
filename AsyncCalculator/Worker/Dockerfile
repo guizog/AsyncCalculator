@@ -22,4 +22,4 @@ ENV RABBITMQ_USER=guest
 ENV RABBITMQ_PASS=guest
 ENV RABBITMQ_PORT=5672
 
-ENTRYPOINT ["dotnet", "Backend.dll"]
+ENTRYPOINT ["dotnet", "Worker.dll"]

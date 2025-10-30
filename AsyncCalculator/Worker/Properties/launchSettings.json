@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AsyncCalculator": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

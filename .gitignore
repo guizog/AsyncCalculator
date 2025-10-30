@@ -23,3 +23,11 @@
 /AsyncCalculator/Backend/obj
 /AsyncCalculator/Backend/Properties
 /AsyncCalculator/Backend/Backend.csproj.user
+/AsyncCalculator/API/.vscode
+/AsyncCalculator/API/node_modules
+/AsyncCalculator/API/obj/Debug
+/AsyncCalculator/API/Frontend.njsproj
+/AsyncCalculator/API/Frontend.njsproj.user
+/AsyncCalculator/.vs/ProjectEvaluation
+/AsyncCalculator/Worker/obj
+/AsyncCalculator/Worker/bin/Debug/net9.0

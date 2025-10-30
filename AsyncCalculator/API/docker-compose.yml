@@ -1,13 +1,15 @@
 version: "3.9"
 
 services:
-  angularserver:
+  apiserver:
     build: .
-    container_name: angularserver
+    container_name: apiserver
     networks:
       - rabbit_network
     ports:
-       - "8080:8080"  
+       - "1337:1337"
+    environment:
+        RABBITMQ_HOST: rabbitmq    
 
 networks:
   rabbit_network:

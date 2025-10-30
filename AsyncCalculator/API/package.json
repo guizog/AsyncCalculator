@@ -1,0 +1,17 @@
+{
+  "name": "frontend",
+  "version": "0.0.0",
+  "description": "Frontend",
+  "main": "server.js",
+  "author": {
+    "name": ""
+  },
+  "devDependencies": {
+    "eslint": "^8.21.0"
+  },
+  "eslintConfig": {},
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "mongodb": "^6.20.0"
+  }
+}

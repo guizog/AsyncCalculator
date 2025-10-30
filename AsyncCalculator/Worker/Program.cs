@@ -1,14 +1,15 @@
 ﻿using System;
+using System.Xml;
 using System.Text;
 using System.Threading;
+using System.Text.Json;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using MongoDB.Driver;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using MongoDB.Bson.IO;
-using System.Text.Json;
-using System.Xml;
+using Backend.Model;
 
 
 class Program
@@ -22,7 +23,7 @@ class Program
         var port = int.Parse(Environment.GetEnvironmentVariable("RABBITMQ_PORT") ?? "5672");
 
 
-        var factory = new ConnectionFactory
+        ConnectionFactory factory = new ConnectionFactory
         {
             HostName = host,
             UserName = user,
@@ -38,8 +39,8 @@ class Program
         {
             try
             {
-                using var connection = await factory.CreateConnectionAsync();
-                using var channel = await connection.CreateChannelAsync();
+                using IConnection connection = await factory.CreateConnectionAsync();
+                using IChannel channel = await connection.CreateChannelAsync();
                 await channel.QueueDeclareAsync(
                     queue: "calc_queue",
                     durable: true,
@@ -50,34 +51,38 @@ class Program
 
                 await channel.BasicQosAsync(0, 1, false);
 
-                var consumer = new AsyncEventingBasicConsumer(channel);
+                AsyncEventingBasicConsumer consumer = new AsyncEventingBasicConsumer(channel);
                 consumer.ReceivedAsync += async (sender, ea) =>
                 {
-                    var body = ea.Body.ToArray();
-                    var message = Encoding.UTF8.GetString(body);
-
-                    Console.WriteLine($" [x] Received: {message}");
-                   
-
-                    BsonDocument mongoRecord = await QueryRecord(message);
-                    //Console.WriteLine($" [DEBUG] num1: {mongoRecord["num1"]} of type: {mongoRecord["num1"].GetType()} | num2: {mongoRecord["num2"]} of type: {mongoRecord["num2"].GetType()} ");
-                    int sum = (int)mongoRecord["number1"] + (int)mongoRecord["number2"];
-                    Console.WriteLine($" [x] Sum result of: {sum}");
-
-                    if (mongoRecord == null)
+                    try
                     {
-                        Console.WriteLine($" [!] Record not returned from query.");
-                    }
-                    else
-                    {
-                        Console.WriteLine($" [x] Starting processing of record...");
+                        var body = ea.Body.ToArray();
+                        string message = Encoding.UTF8.GetString(body);
+
+                        Console.WriteLine($" [x] Received: {message}");
+                        Record mongoRecord = await QueryRecord(message);
+
+
+                        if (mongoRecord == null)
+                        {
+                            Console.WriteLine($" [!] Record not returned from query.");
+                            await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                            return;
+                        }
+
+                        int sum = (int)mongoRecord.number1 + (int)mongoRecord.number2;
+                        Console.WriteLine($" [x] Sum result of: {sum}");
+
                         await InsertResult(message, sum);
-                        
+                        Console.WriteLine(" [x] Done");
+
+                        await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
                     }
-
-                    Console.WriteLine(" [x] Done");
-
-                    await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($" [!] Error while processing message: {ex.Message}");
+                        await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                    }   
                 };
 
                 await channel.BasicConsumeAsync(
@@ -90,6 +95,7 @@ class Program
 
                 await Task.Delay(Timeout.Infinite);
                 break;
+
             }
             catch (Exception ex)
             {
@@ -104,44 +110,40 @@ class Program
 
     public static async Task<bool> InsertResult(string id, int result)
     {
-        var collection = client.GetDatabase("asynccalculator").GetCollection<BsonDocument>("records");
-        var filter = Builders<BsonDocument>.Filter.Eq("_id", BsonValue.Create(id));
+        var collection = client.GetDatabase("asynccalculator").GetCollection<Record>("records");
+        var filter = Builders<Record>.Filter.Eq("_id", BsonValue.Create(id));
 
-        var update = Builders<BsonDocument>.Update
+        var update = Builders<Record>.Update
             .Set("result", result)
             .Set("status", "FINISHED");
 
-        var updateResult = await collection.UpdateOneAsync(filter, update);
-        if(updateResult.ModifiedCount > 0)
+        UpdateResult updateResult = await collection.UpdateOneAsync(filter, update);
+        if (updateResult.ModifiedCount > 0)
         {
             Console.WriteLine($" [*] Updated with success id: {id}");
             return true;
         }
-        else
-        {
-            Console.WriteLine($" [!] Failed to update id: {id}");
-            return false;
-        }
-
+        Console.WriteLine($" [!] Failed to update id: {id}");
+        return false;
     }
 
-    public static async Task<BsonDocument> QueryRecord(string id_)
+    public static async Task<Record> QueryRecord(string id_)
     {
         try
         {
             BsonValue id = BsonValue.Create(id_);
             Console.WriteLine($" [*] Querying for id: {id}");
 
-            var collection = client.GetDatabase("asynccalculator").GetCollection<BsonDocument>("records");
-            var filter = Builders<BsonDocument>.Filter.Eq("_id", BsonValue.Create(id));
+            var collection = client.GetDatabase("asynccalculator").GetCollection<Record>("records");
+            var filter = Builders<Record>.Filter.Eq("_id", BsonValue.Create(id));
 
             Console.WriteLine($"Query id type: {id.GetType()} value: {id}");
 
 
-            var document = collection.Find(filter).FirstOrDefault();
+            Record document = collection.Find(filter).FirstOrDefault();
 
             int retries = 0;
-            while(retries < 3)
+            while (retries < 3)
             {
                 document = collection.Find(filter).FirstOrDefault();
                 if (document != null)
@@ -156,11 +158,11 @@ class Program
                 Console.WriteLine($" [!] No record found with id: {id} after 3 retries.");
                 Console.WriteLine(" [*] Querying the entire collection");
 
-                var documentList = await collection.Find(new BsonDocument()).ToListAsync();
+                List<Record> documentList = await collection.Find(new BsonDocument()).ToListAsync();
                 foreach (var doc in documentList)
                 {
                     Console.WriteLine(doc.ToJson(new MongoDB.Bson.IO.JsonWriterSettings { Indent = true }));
-                    if (doc["_id"] == id)
+                    if (doc._id == id)
                         Console.WriteLine(" [*] Record found in foreach");
                 }
 
@@ -171,11 +173,12 @@ class Program
             Console.WriteLine(document.ToJson(new JsonWriterSettings { Indent = true }));
 
             return document;
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Console.WriteLine($"[!] Error querying record: {ex.Message}");
             throw;
         }
-        
+
     }
 }

@@ -1,0 +1,20 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/AsyncCalculator/.vs/AsyncCalculator/config
+/AsyncCalculator/.vs/AsyncCalculator
+/AsyncCalculator/AsyncCalculator/bin/Debug/net9.0
+/AsyncCalculator/AsyncCalculator/obj
+/AsyncCalculator/AsyncCalculator/Model
+/AsyncCalculator/AsyncCalculator/Backend.csproj.user
+/AsyncCalculator/AsyncCalculator/Properties
+/AsyncCalculator/Frontend/.vscode
+/AsyncCalculator/Frontend/node_modules
+/AsyncCalculator/Frontend/obj/Debug
+/AsyncCalculator/Frontend/Frontend.njsproj
+/AsyncCalculator/Frontend/Frontend.njsproj.user
+/AsyncCalculator/Frontend/nuget.config
+/AsyncCalculator/Frontend/PROJECT_MIGRATION_LOG.txt
+/AsyncCalculator/Frontend/README.md
+/AsyncCalculator/AsyncCalculator.sln

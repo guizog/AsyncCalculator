@@ -73,7 +73,12 @@ class Program
                         int sum = (int)mongoRecord.number1 + (int)mongoRecord.number2;
                         Console.WriteLine($" [x] Sum result of: {sum}");
 
-                        await UpdateRecord(message, sum);
+                        if (!await UpdateRecord(message, sum)) 
+                        {
+                            Console.WriteLine($" [!] Failure to update record in mongodb.");
+                            await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                            return;
+                        }
                         Console.WriteLine(" [x] Done");
 
                         await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
@@ -120,7 +125,7 @@ class Program
         UpdateResult updateResult = await collection.UpdateOneAsync(filter, update);
         if (updateResult.ModifiedCount > 0)
         {
-            Console.WriteLine($" [*] Updated with success id: {id}");
+            Console.WriteLine($" [x] Updated with success id: {id}");
             return true;
         }
         Console.WriteLine($" [!] Failed to update id: {id}");
@@ -137,8 +142,7 @@ class Program
             var collection = client.GetDatabase("asynccalculator").GetCollection<Record>("records");
             var filter = Builders<Record>.Filter.Eq("_id", BsonValue.Create(id));
 
-            Console.WriteLine($"Query id type: {id.GetType()} value: {id}");
-
+            //Console.WriteLine($"Query id type: {id.GetType()} value: {id}");
 
             Record document = collection.Find(filter).FirstOrDefault();
 
@@ -148,7 +152,7 @@ class Program
                 return null;
             }
 
-            Console.WriteLine($" [*] Record with Id {id} found");
+            Console.WriteLine($" [x] Record with Id {id} found");
             Console.WriteLine(document.ToJson(new JsonWriterSettings { Indent = true }));
 
             return document;

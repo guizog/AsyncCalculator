@@ -12,68 +12,94 @@ var uri = "mongodb://mongodb:27017";
 const client = new MongoClient(uri);
 
 
-http.createServer(function (req, res) {
+http.createServer(async function (req, res) {
 
-    console.log(` [x] Logging request: ${req}`);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
+    console.log(` [x] Logging request: ${req.url} : ${req.method}`);
+    var id = '';
+
+    var splitUrl = req.url.split("/").filter(Boolean);
     if (req.method == "GET") {
-        var splitUrl = req.url.split("/").filter(Boolean);
-        //console.log(`--------URL: ${splitUrl}`);
-
-        if (req.url == "/") {
-            //replace for /index.html file
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('Hello World\n');
-        }
-
         if (splitUrl[0] == "GetResult" && splitUrl[1] != null) {
-            QueryResult(splitUrl[1]);
-        }
+            var result;
+            do {
+                result = await QueryResult(splitUrl[1]);
+            } while (result == null)
 
-        if (req.url == "/CalcAsync") { // for testing without interface
-            Calculate();
-        }
+            console.log(" [x] FINAL RESULT: ", result);
 
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result));
+        }
     }
     if (req.method == "POST") {
-        if (req.url == "/CalcAsync"){
-            Calculate();
-        }
-    }
-    
-}).listen(port);
+        if (splitUrl[0] == "CalcAsync") {
+            var body = '';
 
-async function Calculate() {
-    amqp.connect(`amqp://${amqpHost}`, function (error0, connection) {
-        if (error0) {
-            throw error0;
-        }
-        connection.createChannel(async function (error1, channel) {
-            if (error1)
-                throw error1;
+            console.log(` [x] POST request to CalcAsync`);
 
-            var queue = "calc_queue";
-            var messageId = crypto.randomUUID();
-            var num1 = 1;
-            var num2 = 3;
-            await InsertSum(messageId, num1, num2);
-
-            await channel.assertQueue(queue, {
-                durable: true
+            req.on('data', chunk => {
+                body += chunk.toString();
             });
 
-            channel.sendToQueue(queue, Buffer.from(messageId));
-            console.log(" [x] Sent %s", messageId);
+            req.on('end', async () => {
+                var data = JSON.parse(body);
+                console.log(`Parsed payload: ${JSON.stringify(data)}`);
+                id = await Calculate(data.n1, data.n2);
 
-            do {
-                var result = await QueryResult(messageId);
-            } while (result.status != "FINISHED")
+                console.log(` [x] messageId from Calculate(): ${id}`);
 
-            console.log(" [x] FINAL RESULT: ", result.result);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                const responsePayload = { messageId: id };
+                res.end(JSON.stringify(responsePayload));
+            })
 
+        }
+    }
+
+}).listen(port);
+
+async function Calculate(n1, n2) {
+
+    return new Promise((resolve, reject) => {
+        amqp.connect(`amqp://${amqpHost}`, function (error0, connection) {
+            if (error0) {
+                reject(error0);
+            }
+            connection.createChannel(async function (error1, channel) {
+                if (error1)
+                    reject(error1);
+
+                try {
+                    var queue = "calc_queue";
+                    var messageId = crypto.randomUUID();
+                    await InsertSum(messageId, n1, n2);
+
+                    await channel.assertQueue(queue, {
+                        durable: true
+                    });
+
+                    channel.sendToQueue(queue, Buffer.from(messageId));
+                    console.log(" [x] Sent %s", messageId);
+
+                    resolve(messageId);
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    setTimeout(() => connection.close(), 500);
+                }
+            });
         });
-    });
-
+    })
 }
 
 
@@ -91,7 +117,7 @@ async function QueryResult(uuid) {
 
         console.log(" [x] Record queried for status:", record);
 
-        return record;
+        return (record.status == "FINISHED") ? record.result : null;
 
     } catch (err) {
         console.error(err);
@@ -118,8 +144,6 @@ async function InsertSum(uuid, num1, num2) {
             });
         console.log(" [x] Inserted document:", insertResult.insertedId);
 
-        //const docs = await collection.find({}).toArray();
-        //console.log(" [x] Documents in collection:", docs);
     } catch (err) {
         console.error(err);
     } finally {

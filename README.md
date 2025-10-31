@@ -2,7 +2,7 @@
 # Asynccalculator
 
 Projeto que implementa uma calculadora simples com apenas a operação de soma, porém de maneira assincrona através de um message broker e com arquitetura de microsserviços rodando em docker.
-Acesse http://localhost:8080/
+Deploye todos os microsserviços e acesse em http://localhost:8080
 
 # Deployando container do mongodb
     1. docker pull mongo

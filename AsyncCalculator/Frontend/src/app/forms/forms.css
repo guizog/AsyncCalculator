@@ -1,0 +1,45 @@
+
+
+.container {
+  background-color: lightblue; 
+  border: 4px solid #000;
+  border-radius: 12px;
+  padding: 20px;
+  width: 50%;
+  margin: 0 auto;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.centered {
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+  text-align: center;
+}
+
+.title {
+  width: 50%;
+  margin: 0 auto 15px auto;
+  text-align: center;
+  font-size: 1.8rem;
+  color: #222;
+}
+
+.submit{
+    background-color: lightgreen;
+    color: black
+}
+
+
+@media (max-width: 768px) {
+  .container,
+  .centered,
+  .title {
+    width: 90%;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+}

@@ -1,1 +1,18 @@
-<p>forms works!</p>
+
+
+<h1 class="title">Single operation calculator.</h1>
+<div class="container centered">
+  <div class="">
+    <p>Insert both numbers you want to sum: </p>
+    <input id="number1" type="text" [formControl]="number1">
+    +
+    <input id="number2" type="text" [formControl]="number2">
+
+    <button class="submit" type="button" (click)="updateResult()">Submit</button>
+
+    <p>Result of the sum: {{  result.value  }}</p>
+  </div>
+</div>
+
+
+

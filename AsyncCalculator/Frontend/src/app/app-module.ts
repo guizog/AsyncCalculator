@@ -7,12 +7,12 @@ import { Forms } from './forms/forms';
 
 @NgModule({
   declarations: [
-    App,
-    Forms
+    App
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule
+    AppRoutingModule,
+    Forms
   ],
   providers: [
     provideBrowserGlobalErrorListeners()

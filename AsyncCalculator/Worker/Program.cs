@@ -37,7 +37,7 @@ class Program
 
         while (retries < 10)
         {
-            try
+            try 
             {
                 using IConnection connection = await factory.CreateConnectionAsync();
                 using IChannel channel = await connection.CreateChannelAsync();
@@ -115,21 +115,30 @@ class Program
 
     public static async Task<bool> UpdateRecord(string id, int result)
     {
-        var collection = client.GetDatabase("asynccalculator").GetCollection<Record>("records");
-        var filter = Builders<Record>.Filter.Eq("_id", BsonValue.Create(id));
-
-        var update = Builders<Record>.Update
-            .Set("result", result)
-            .Set("status", "FINISHED");
-
-        UpdateResult updateResult = await collection.UpdateOneAsync(filter, update);
-        if (updateResult.ModifiedCount > 0)
+        try
         {
-            Console.WriteLine($" [x] Updated with success id: {id}");
-            return true;
+            var collection = client.GetDatabase("asynccalculator").GetCollection<Record>("records");
+            var filter = Builders<Record>.Filter.Eq("_id", BsonValue.Create(id));
+
+            var update = Builders<Record>.Update
+                .Set("result", result)
+                .Set("status", "FINISHED");
+
+            UpdateResult updateResult = await collection.UpdateOneAsync(filter, update);
+            if (updateResult.ModifiedCount > 0)
+            {
+                Console.WriteLine($" [x] Updated with success id: {id}");
+                return true;
+            }
+            Console.WriteLine($" [!] Failed to update id: {id}");
+            return false;
         }
-        Console.WriteLine($" [!] Failed to update id: {id}");
-        return false;
+        catch(Exception ex)
+        {
+            Console.WriteLine($"[!] Error updating record: {ex.Message}");
+            throw;
+        }
+        
     }
 
     public static async Task<Record> GetRecord(string id_)

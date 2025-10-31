@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-forms',
@@ -18,29 +18,44 @@ export class Forms {
 
   constructor(private http: HttpClient) { };
 
-  async updateResult() {
-    let number1 = parseInt(this.number1.getRawValue() || 0);
-    let number2 = parseInt(this.number2.getRawValue() || 0);
-    let id = '';
+  
 
-    const payload = { n1: number1, n2: number2 };
+  async updateResult() {
+    let number1: number = parseInt(this.number1.getRawValue() || 0);
+    let number2: number = parseInt(this.number2.getRawValue() || 0);
+    let id: string;
+
+    const payload: object = { n1: number1, n2: number2 };
 
     try {
-      const postResponse = await this.http
-        .post<{ messageId: string }>('http://localhost:1337/CalcAsync', payload)
+      const postRaw = await this.http
+        .post('http://localhost:1337/CalcAsync', payload, { responseType: 'text' })
         .toPromise();
 
-      const id = postResponse?.messageId;
+      let postResponse: { messageId: string };
+      try {
+        postResponse = JSON.parse(postRaw ?? "");
+      } catch {
+        console.error('Failed to parse POST response', postRaw);
+        throw new Error('Invalid POST response format');
+      }
+
+      const id: string = postResponse.messageId;
+      if (!id) {
+        throw new Error('messageId missing from POST response');
+      }
+      console.log('POST messageId:', id);
 
       const getResponse = await this.http
-        .get(`http://localhost:1337/GetResult/${id}`)
+        .get<{ result: string}>(`http://localhost:1337/GetResult/${id}`)
         .toPromise();
 
-      console.log(`GET response: ${getResponse}`);
-      this.result.setValue(getResponse);
+      console.log(`GET response: ${JSON.stringify(getResponse)}`);
+      this.result.setValue(getResponse?.result);
 
     } catch (err) {
       console.log(`error: ${err}`);
     }
   }
+
 }

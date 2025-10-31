@@ -60,7 +60,7 @@ class Program
                         string message = Encoding.UTF8.GetString(body);
 
                         Console.WriteLine($" [x] Received: {message}");
-                        Record mongoRecord = await QueryRecord(message);
+                        Record mongoRecord = await GetRecord(message);
 
 
                         if (mongoRecord == null)
@@ -73,7 +73,7 @@ class Program
                         int sum = (int)mongoRecord.number1 + (int)mongoRecord.number2;
                         Console.WriteLine($" [x] Sum result of: {sum}");
 
-                        await InsertResult(message, sum);
+                        await UpdateRecord(message, sum);
                         Console.WriteLine(" [x] Done");
 
                         await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
@@ -108,7 +108,7 @@ class Program
 
     }
 
-    public static async Task<bool> InsertResult(string id, int result)
+    public static async Task<bool> UpdateRecord(string id, int result)
     {
         var collection = client.GetDatabase("asynccalculator").GetCollection<Record>("records");
         var filter = Builders<Record>.Filter.Eq("_id", BsonValue.Create(id));
@@ -127,7 +127,7 @@ class Program
         return false;
     }
 
-    public static async Task<Record> QueryRecord(string id_)
+    public static async Task<Record> GetRecord(string id_)
     {
         try
         {
@@ -142,30 +142,9 @@ class Program
 
             Record document = collection.Find(filter).FirstOrDefault();
 
-            int retries = 0;
-            while (retries < 3)
-            {
-                document = collection.Find(filter).FirstOrDefault();
-                if (document != null)
-                    break;
-                Console.WriteLine($" [!] No record found with id: {id}. Retrying");
-
-                retries++;
-            }
-
             if (document == null)
             {
-                Console.WriteLine($" [!] No record found with id: {id} after 3 retries.");
-                Console.WriteLine(" [*] Querying the entire collection");
-
-                List<Record> documentList = await collection.Find(new BsonDocument()).ToListAsync();
-                foreach (var doc in documentList)
-                {
-                    Console.WriteLine(doc.ToJson(new MongoDB.Bson.IO.JsonWriterSettings { Indent = true }));
-                    if (doc._id == id)
-                        Console.WriteLine(" [*] Record found in foreach");
-                }
-
+                Console.WriteLine($" [!] No record found with id: {id}");
                 return null;
             }
 

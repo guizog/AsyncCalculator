@@ -1,72 +1,88 @@
 'use strict';
 
-var amqp = require('amqplib/callback_api');
-var crypto = require('crypto');
-var http = require('http');
+const amqp = require('amqplib/callback_api');
+const crypto = require('crypto');
+const http = require('http');
+const express = require('express');
 const { MongoClient } = require('mongodb');
 
 
-var port = process.env.PORT || 1337;
-var amqpHost = process.env.RABBITMQ_HOST || 'rabbitmq';
-var uri = "mongodb://mongodb:27017";
+const port = process.env.PORT || 1337;
+const amqpHost = process.env.RABBITMQ_HOST || 'rabbitmq';
+const uri = "mongodb://mongodb:27017";
 const client = new MongoClient(uri);
+const app = express();
 
+app.use(express.json());
 
-http.createServer(async function (req, res) {
-
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') {
-        res.writeHead(204);
-        res.end();
-        return;
+        return res.sendStatus(204)
     }
 
-    console.log(` [x] Logging request: ${req.url} : ${req.method}`);
-    var id = '';
+    next();
+});
 
-    var splitUrl = req.url.split("/").filter(Boolean);
-    if (req.method == "GET") {
-        if (splitUrl[0] == "GetResult" && splitUrl[1] != null) {
-            var result;
-            do {
-                result = await QueryResult(splitUrl[1]);
-            } while (result == null)
+app.get('/GetResult/:id', async (req, res) => {
+    console.log(` [x] GET request to /GetResult`);
 
-            console.log(" [x] FINAL RESULT: ", result);
-
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(result));
+    try {
+        var id = req.params.id;
+        var result;
+        if (id == null || id == undefined) {
+            res.status(404)
+                .header("Content-Type", "application/json");
         }
-    }
-    if (req.method == "POST") {
-        if (splitUrl[0] == "CalcAsync") {
-            var body = '';
 
-            console.log(` [x] POST request to CalcAsync`);
+        do {
+            result = await QueryResult(id);
+        } while (result == null)
 
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
+        console.log(" [x] FINAL RESULT: ", result);
 
-            req.on('end', async () => {
-                var data = JSON.parse(body);
-                console.log(`Parsed payload: ${JSON.stringify(data)}`);
-                id = await Calculate(data.n1, data.n2);
+        res.status(200)
+            .header("Content-Type", "application/json")
+            .json({result})
 
-                console.log(` [x] messageId from Calculate(): ${id}`);
-
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                const responsePayload = { messageId: id };
-                res.end(JSON.stringify(responsePayload));
-            })
-
-        }
+    } catch (ex) {
+        console.log(` [!] Internal Server Error :: ${ex}`);
+        res.status(500)
+            .header("Content-Type", "application/json");
     }
 
-}).listen(port);
+})
+
+app.post('/CalcAsync', async (req, res) => {
+    console.log(` [x] POST request to CalcAsync`);
+
+    try {
+        var requestPayload = req.body;
+        console.log(` [x] Request payload received: ${JSON.stringify(requestPayload)}`);
+
+        var id = await Calculate(requestPayload.n1, requestPayload.n2);
+        console.log(` [x] messageId from Calculate(): ${id}`);
+
+        const payload = { messageId: id };
+
+        res.status(200)
+            .header("Content-Type", "application/json")
+            .json(payload)
+    } catch (ex) {
+        console.log(` [!] Internal Server Error :: ${ex}`);
+        res.status(500)
+            .header("Content-Type", "application/json");
+    }
+    
+})
+
+app.listen(port, () => {
+    console.log(` [x] Server running on http://localhost:${port}`);
+});
+
 
 async function Calculate(n1, n2) {
 
@@ -81,6 +97,7 @@ async function Calculate(n1, n2) {
 
                 try {
                     var queue = "calc_queue";
+
                     var messageId = crypto.randomUUID();
                     await InsertSum(messageId, n1, n2);
 

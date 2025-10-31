@@ -26,7 +26,7 @@ Deploye todos os microsserviços e acesse em http://localhost:8080
 
 # Buildando Frontend angular e deployando o container
     1. cd Frontend
-    2. npm install -g @angular/cli
+    2. npm install
     3. docker build -t angularserver .
     4. docker compose up -d --build 
 

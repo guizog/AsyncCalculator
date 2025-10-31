@@ -31,3 +31,6 @@
 /AsyncCalculator/.vs/ProjectEvaluation
 /AsyncCalculator/Worker/obj
 /AsyncCalculator/Worker/bin/Debug/net9.0
+/AsyncCalculator/Worker/Properties/launchSettings.json
+/AsyncCalculator/API/nuget.config
+/AsyncCalculator/API/README.md

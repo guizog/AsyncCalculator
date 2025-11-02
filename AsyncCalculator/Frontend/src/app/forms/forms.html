@@ -10,7 +10,14 @@
 
     <button class="submit" type="button" (click)="updateResult()">Submit</button>
 
-    <p>Result of the sum: {{  result.value  }}</p>
+    @if (isLoading){
+      <h1>Loading your result. Please wait...</h1>
+    }
+    @else{
+      <p>Result of the sum: {{  result.value  }}</p>
+    }
+
+
   </div>
 </div>
 

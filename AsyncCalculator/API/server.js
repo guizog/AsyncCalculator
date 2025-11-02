@@ -40,6 +40,9 @@ app.get('/GetResult/:id', async (req, res) => {
 
         do {
             result = await QueryResult(id);
+            if (result == null) 
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
         } while (result == null)
 
         console.log(" [x] FINAL RESULT: ", result);

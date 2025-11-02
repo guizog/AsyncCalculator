@@ -5,7 +5,7 @@ services:
     build: .
     container_name: rabbitmq_worker
     environment:
-      RABBITMQ_HOST: rabbitmq       # the hostname of the RabbitMQ container
+      RABBITMQ_HOST: rabbitmq  
       RABBITMQ_USER: guest
       RABBITMQ_PASS: guest
       RABBITMQ_PORT: 5672
@@ -19,8 +19,8 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"      # AMQP
-      - "15672:15672"    # Management UI
+      - "5672:5672"     
+      - "15672:15672"    
     networks:
       - rabbit_network
 

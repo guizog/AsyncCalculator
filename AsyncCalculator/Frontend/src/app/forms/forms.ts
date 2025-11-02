@@ -13,8 +13,9 @@ import { firstValueFrom } from 'rxjs';
 export class Forms {
   number1: FormControl = new FormControl('');
   number2: FormControl = new FormControl('');
-
   result: FormControl = new FormControl('');
+
+  isLoading: boolean = false;
 
   constructor(private http: HttpClient) { };
 
@@ -46,11 +47,14 @@ export class Forms {
       }
       console.log('POST messageId:', id);
 
+      this.isLoading = true;
+
       const getResponse = await this.http
         .get<{ result: string}>(`http://localhost:1337/GetResult/${id}`)
         .toPromise();
 
       console.log(`GET response: ${JSON.stringify(getResponse)}`);
+      this.isLoading = false;
       this.result.setValue(getResponse?.result);
 
     } catch (err) {

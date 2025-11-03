@@ -14,11 +14,10 @@ Deploye todos os microsserviços e acesse em http://localhost:8080
 
 # Buildando worker e deployando o container
     1. cd Worker
-    2. dotnet add package MongoDB.Driver
-    3. dotnet add package RabbitMQ.Client
-    4. dotnet build
-    5. docker build -t rabbitmq-worker .
-    6. docker compose up -d --build 
+    2. dotnet restore
+    3. dotnet build
+    4. docker build -t rabbitmq-worker .
+    5. docker compose up -d --build 
 
 # Buildando API e deployando o container
     1. cd API
@@ -31,3 +30,4 @@ Deploye todos os microsserviços e acesse em http://localhost:8080
     2. npm install
     3. docker build -t angularserver .
     4. docker compose up -d --build 
+

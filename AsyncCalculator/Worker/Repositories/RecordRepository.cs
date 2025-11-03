@@ -31,6 +31,7 @@ namespace Worker.Repositories
                 if(document == null)
                 {
                     _logger.LogError("Record {id} not returned in the mongodb query.", id);
+                    return null;
                 }
 
                 _logger.LogInformation("Record with Id {id} found", id);
@@ -41,7 +42,7 @@ namespace Worker.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error querying record: {ex.Message}", ex.Message);
+                _logger.LogError(ex, "Error querying record id: {id}", id);
                 throw;
             }
         }
@@ -69,7 +70,7 @@ namespace Worker.Repositories
             }
             catch(Exception ex)
             {
-                _logger.LogError("Error updating record: {ex.Message}", ex.Message);
+                _logger.LogError(ex, "Error updating record id: {id}", id);
                 throw;
             }
         }

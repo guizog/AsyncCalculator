@@ -69,7 +69,7 @@ namespace Worker.Services
                             }
                             else
                             {
-                                _logger.LogInformation("Failed to update record with id: {message}", message);
+                                _logger.LogError("Failed to update record with id: {message}", message);
                                 await channel.BasicNackAsync(ea.DeliveryTag, false, false);
                             }
                             
@@ -78,7 +78,7 @@ namespace Worker.Services
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError("Error while processing message: {ex.Message}", ex.Message);
+                            _logger.LogError(ex, "Error while processing message");
                             await channel.BasicNackAsync(ea.DeliveryTag, false, false);
                         }
                     };
@@ -98,7 +98,7 @@ namespace Worker.Services
                 catch (Exception ex)
                 {
                     retries++;
-                    _logger.LogError("RabbitMQ not ready yet, retrying in 5s ({retries}/10)...", retries);
+                    _logger.LogError(ex, "RabbitMQ not ready yet, retrying in 5s ({retries}/10)...", retries);
                     await Task.Delay(5000);
                 }
             }

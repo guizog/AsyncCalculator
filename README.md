@@ -4,6 +4,8 @@
 Projeto que implementa uma calculadora simples com apenas a operação de soma, porém de maneira assincrona através de um message broker e com arquitetura de microsserviços rodando em docker.
 Deploye todos os microsserviços e acesse em http://localhost:8080
 
+![screenshot](https://github.com/guizog/AsyncCalculator/blob/master/imgs/img.png)
+
 # Deployando container do mongodb
     1. docker pull mongo
     2. docker run --name mongodb -p 27017:27017 -v mongo-data:/data/db -d mongo
@@ -29,4 +31,3 @@ Deploye todos os microsserviços e acesse em http://localhost:8080
     2. npm install
     3. docker build -t angularserver .
     4. docker compose up -d --build 
-

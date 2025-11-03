@@ -3,16 +3,19 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Driver;
 using Worker.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Worker.Repositories
 {
     public class RecordRepository : IRecordRepository
     {
         private readonly IMongoDatabase _database;
+        private readonly ILogger<RecordRepository> _logger;
 
-        public RecordRepository(MongoClient client)
+        public RecordRepository(MongoClient client, ILogger<RecordRepository> logger)
         {
             _database = client.GetDatabase("asynccalculator");
+            _logger = logger;
         }
 
         public async Task<Record?> GetRecordAsync(string id)
@@ -27,10 +30,10 @@ namespace Worker.Repositories
 
                 if(document == null)
                 {
-                    Console.WriteLine($" [!] Record ${id} not returned in the mongodb query.");
+                    _logger.LogError("Record {id} not returned in the mongodb query.", id);
                 }
 
-                Console.WriteLine($" [x] Record with Id {id} found");
+                _logger.LogInformation("Record with Id {id} found", id);
                 Console.WriteLine(document.ToJson(new JsonWriterSettings { Indent = true }));
 
                 return document;
@@ -38,7 +41,7 @@ namespace Worker.Repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[!] Error querying record: {ex.Message}");
+                _logger.LogError("Error querying record: {ex.Message}", ex.Message);
                 throw;
             }
         }
@@ -57,16 +60,16 @@ namespace Worker.Repositories
                 UpdateResult updateResult = await collection.UpdateOneAsync(filter, update);
                 if (updateResult.ModifiedCount > 0)
                 {
-                    Console.WriteLine($" [x] Updated with success id: {id}");
+                    _logger.LogInformation("Updated with success id: {id}", id);
                     return true;
                 }
-                Console.WriteLine($" [!] Failed to update id: {id}");
+                _logger.LogError("Failed to update id: {id}", id);
                 return false;
 
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"[!] Error updating record: {ex.Message}");
+                _logger.LogError("Error updating record: {ex.Message}", ex.Message);
                 throw;
             }
         }

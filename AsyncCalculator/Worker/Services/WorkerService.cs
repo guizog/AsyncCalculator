@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Worker.Interfaces;
@@ -8,11 +9,14 @@ namespace Worker.Services
     public class WorkerService
     {
         private readonly IMessageProcessor _processor;
-        private readonly ConnectionFactory _factory; 
+        private readonly ConnectionFactory _factory;
+        private readonly ILogger<WorkerService> _logger;
 
-        public WorkerService(IMessageProcessor processor, string host, int port, string username, string password)
+        public WorkerService(IMessageProcessor processor, ILogger<WorkerService> logger,string host, int port, string username, string password)
         {
             _processor = processor;
+
+            _logger = logger;
 
             _factory = new ConnectionFactory
             {
@@ -26,7 +30,7 @@ namespace Worker.Services
 
         public async Task StartAsync()
         {
-            Console.WriteLine($" [*] Connecting to RabbitMQ at {_factory.HostName}:{_factory.Port}...");
+            _logger.LogInformation("Connecting to RabbitMQ at {_factory.HostName}:{_factory.Port}...", _factory.HostName, _factory.Port);
 
             int retries = 0;
             while (retries < 10)
@@ -54,27 +58,27 @@ namespace Worker.Services
                             var body = ea.Body.ToArray();
                             string message = Encoding.UTF8.GetString(body);
 
-                            Console.WriteLine($" [x] Received: {message}");
+                            _logger.LogInformation("Received: {message}", message);
 
                             bool processSuccess = await _processor.ProcessAsync(message);
 
                             if (processSuccess)
                             {
                                 await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
-                                Console.WriteLine($" [x] Success updating record with id: {message}");
+                                _logger.LogInformation("Success updating record with id: {message}", message);
                             }
                             else
                             {
-                                Console.WriteLine($" [!] Failed to update record with id: {message}");
+                                _logger.LogInformation("Failed to update record with id: {message}", message);
                                 await channel.BasicNackAsync(ea.DeliveryTag, false, false);
                             }
                             
-                            Console.WriteLine(" [x] Done");
+                            _logger.LogInformation("Done processing record: {message}", message);
 
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($" [!] Error while processing message: {ex.Message}");
+                            _logger.LogError("Error while processing message: {ex.Message}", ex.Message);
                             await channel.BasicNackAsync(ea.DeliveryTag, false, false);
                         }
                     };
@@ -85,7 +89,7 @@ namespace Worker.Services
                         consumer: consumer
                     );
 
-                    Console.WriteLine(" [*] Waiting for messages. Press CTRL+C to exit.");
+                    _logger.LogInformation("Waiting for messages. Press CTRL+C to exit.");
 
                     await Task.Delay(Timeout.Infinite);
                     break;
@@ -94,7 +98,7 @@ namespace Worker.Services
                 catch (Exception ex)
                 {
                     retries++;
-                    Console.WriteLine($" [!] RabbitMQ not ready yet, retrying in 5s ({retries}/10)...");
+                    _logger.LogError("RabbitMQ not ready yet, retrying in 5s ({retries}/10)...", retries);
                     await Task.Delay(5000);
                 }
             }

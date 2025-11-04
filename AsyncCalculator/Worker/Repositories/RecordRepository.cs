@@ -12,7 +12,7 @@ namespace Worker.Repositories
         private readonly IMongoDatabase _database;
         private readonly ILogger<RecordRepository> _logger;
 
-        public RecordRepository(MongoClient client, ILogger<RecordRepository> logger)
+        public RecordRepository(IMongoClient client, ILogger<RecordRepository> logger)
         {
             _database = client.GetDatabase("asynccalculator");
             _logger = logger;
@@ -26,9 +26,16 @@ namespace Worker.Repositories
                 var collection = _database.GetCollection<Record>("records");
                 var filter = Builders<Record>.Filter.Eq("_id", BsonValue.Create(id));
 
-                Record document = await collection.Find(filter).FirstOrDefaultAsync();
+                //  foi necessário sair do Find() e ir para o FindAsync(), pois o Find() é método de extensão e o moq não consegue mockar ele :(
+                var cursor = await collection.FindAsync(filter, new FindOptions<Record>());
+                Record? document = null;
+                using (cursor)
+                {
+                    if (await cursor.MoveNextAsync())
+                        document = cursor.Current.FirstOrDefault();
+                }
 
-                if(document == null)
+                if (document == null)
                 {
                     _logger.LogError("Record {id} not returned in the mongodb query.", id);
                     return null;

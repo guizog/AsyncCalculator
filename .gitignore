@@ -35,3 +35,5 @@
 /AsyncCalculator/API/nuget.config
 /AsyncCalculator/API/README.md
 /AsyncCalculator/Worker/Properties/launchSettings.json
+/AsyncCalculator/WorkerTests/bin/Debug/net9.0
+/AsyncCalculator/WorkerTests/obj

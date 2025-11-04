@@ -13,7 +13,7 @@ class Program
     {
 
         var services = new ServiceCollection();
-        services.AddSingleton<MongoClient>(sp => new MongoClient("mongodb://mongodb:27017"));
+        services.AddSingleton<IMongoClient>(sp => new MongoClient("mongodb://mongodb:27017"));
 
         services.AddScoped<IRecordRepository, RecordRepository>();
         services.AddScoped<IMessageProcessor, MessageProcessor>();
